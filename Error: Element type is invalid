@@ -1,0 +1,81 @@
+//http://localhost:3000/在浏览器打开，提示如下：
+Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+//在终端输入命令：npm test,提示如下：
+Target container is not a DOM element.
+
+//分析：
+1.Identifier 'App' has already been declared 后在两处改名：class MyApp extends Component;ReactDOM.render(<MyApp />
+未改动：import App from './App';export default App;
+2.根据浏览器上出现的提示：You likely forgot to export your component from the file it's defined in 解决
+3.解决办法：改动一处为：export default MyApp
+4.其他：在其他提示上花费太多时间去网上搜寻。
+
+//代码
+import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import './App.css';
+
+const list = [
+  {
+    title: 'pexels',
+    url: 'https://www.pexels.com/zh-cn/',
+    objectID: 0,
+  },
+  {
+    title: 'unsplash',
+    url: 'https://unsplash.com/t/wallpapers',
+    objectID: 1,
+  },
+];
+
+class MyApp extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      list,
+    };
+
+    this.onDismiss = this.onDismiss.bind(this);
+  }
+
+  onDismiss(id) {
+      const isNotId = item => item.objectID !== id;
+      let updatedList = this.state.list.filter(isNotId);
+      this.setState({ list: updatedList });
+  }
+
+  render() {
+      return (
+        <div className="App">
+          {this.state.list.map(item => {
+            const handleDismiss = () => 
+              this.onDismiss(item.objectID);
+
+            return(
+              <div key={item.objectID}>
+                <span>
+                 <a href={item.url}>{item.title}</a>
+                </span>
+                <span>
+                  <button
+                    onClick={handleDismiss}
+                    type="button"
+                  >
+                  Dismiss
+                  </button>
+                </span>
+              </div>
+            );
+          }
+          )}
+        </div>    
+      );            
+  } 
+}
+
+ReactDOM.render(<MyApp />,document.getElementById('root'));
+
+export default App;
