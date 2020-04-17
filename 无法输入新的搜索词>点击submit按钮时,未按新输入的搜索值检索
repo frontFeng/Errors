@@ -1,0 +1,49 @@
+//问题1：解决：取消Search组件拆分，直接在APP 组件中写：
+return (
+      <div className="page">
+        <div className="interactions">
+          <form onSubmit={this.onSubmit}>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => this.onSearchChange(e)}
+            />
+            <button type="submit">
+            搜索
+            </button>
+          </form>
+        </div>
+        
+
+//部分代码
+render() {
+    const { searchTerm, result } = this.state;
+    return (
+      ...
+          <Search 
+            value={searchTerm}
+            onChange={this.onSearchChange}
+            onSubmit={this.onSearchSubmit}
+          >
+            搜索
+          </Search>
+          ...
+//函数式无状态组件
+const Search = ({ 
+  value, 
+  onChange, 
+  onSubmit,
+  children 
+}) => 
+    <form onSubmit={onsubmit}>
+      <input
+      type="text"
+      value={value}
+      onChange={onchange}
+      />
+      <button type="submit">
+        {children}
+      </button>
+  </form>
+
+//
