@@ -1,0 +1,182 @@
+//只有数组具有.map方法，此处它返回一个对象，因此无法在其上进行映射
+//原因
+updatedHits为数组，错写为对象，报错TypeError: list.map is not a function
+//解决办法，花括号改为方括号，如下
+    const updatedHits = [
+      ...oldHits,
+      hits
+    ];
+//代码
+import React, { Component, Children } from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import './App.css';
+//URL常量和默认参数
+const DEFAULT_QUERY = 'redux';
+
+const PATH_BASE = 'https://hn.algolia.com/api/v1';
+const PATH_SEARCH = '/search';
+const PARAM_SEARCH = 'query=';
+const PARAM_PAGE = 'page=';
+
+const url = `${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${DEFAULT_QUERY}&${PARAM_PAGE}`;
+
+//高阶函数
+//在组件类之外定义的，不能访问到组件内的状态，所以无法访问searchTerm属性
+//需要传递searchTerm到过滤函数并返回一个新函数
+// const isSearched = searchTerm => item => 
+//   item.title.toLowerCase().includes(searchTerm.toLowerCase());
+//函数式无状态组件
+//增加一个按钮(设置type="submit"），并通过表单的onSubmit属性去传递onSubmit()方法
+//移除Table组件中的过滤功能，因为不会在客户端进行过滤
+//点击按钮(type="submit"）时，搜索结果将直接从API中得到
+
+class MyApp extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      //使用真实的API
+      result: null,
+      searchTerm: DEFAULT_QUERY,
+    };
+    //使用真实的API
+    this.setSearchTopStories = this.setSearchTopStories.bind(this);
+    this.fetchSearchTopStories = this.fetchSearchTopStories.bind(this);
+    this.onSearchChange = this.onSearchChange.bind(this);
+    this.onSearchSubmit = this.onSearchSubmit.bind(this);
+    this.onDismiss = this.onDismiss.bind(this);
+  }
+  //使用真实的API
+  setSearchTopStories(result) {
+    const { hits, page } = result;
+
+    const oldHits = page !== 0 
+      ? this.state.result.hits
+      : [];
+
+    const updatedHits = {
+      ...oldHits,
+      hits
+    };
+
+    this.setState({ 
+      result: {hits: updatedHits, page}
+    });
+
+    console.log(this.state.result);
+  }
+//使用的是原生的fetch API，URL作为fetch API函数的参数
+//返回的格式需要被转化成JSON格式的数据结构
+//最后将处理后的响应赋值给组件内部状态中的结果
+//此外，用一段catch 代码来处理出错的情况
+  fetchSearchTopStories(searchTerm, page = 0) {
+    fetch(`${PATH_BASE}${PATH_SEARCH}?${PARAM_SEARCH}${searchTerm}&${PARAM_PAGE}${page}`)
+      .then(response => response.json())
+      .then(result => this.setSearchTopStories(result))
+      .catch(e => e);
+  }
+//在组件挂载之后，用componentDidMount()生命周期方法去获取数据
+//第一次获取数据时，用的是本地状态中的默认搜索词
+  componentDidMount() {
+    const { searchTerm } = this.state;
+    this.fetchSearchTopStories(searchTerm);
+  }
+
+  // onDismiss()方法不能处理复杂的result对象=>Dismiss按钮不工作
+  // 之前处理的是一个本地状态中的简单列表
+  // 现在去操作这个result对象
+  // 使用扩展符,数组或对象中的每一个值都会被拷贝到一个新的数组或对象
+  onDismiss(id) {
+      const isNotId = item => item.objectID !== id;
+      const updatedHits = this.state.result.hits.filter(isNotId);
+      this.setState({ 
+        result: {...this.state.result, hits: updatedHits } 
+      });
+  }
+
+  onSearchChange(event) {
+    this.setState({ searchTerm: event.target.value });
+    console.log(event.target.value);
+    
+  }
+
+  onSearchSubmit(event) {
+    const { searchTerm } = this.state;
+    this.fetchSearchTopStories(searchTerm);
+    event.preventDefault();
+  }
+
+  render() {
+    const { searchTerm, result } = this.state;
+    const page = (result && result.page) || 0;
+    return (
+      <div className="page">
+        <div className="interactions">
+          <button type="button" onClick={() => this.fetchSearchTopStories(searchTerm, page+1)}>
+            more
+          </button>
+          <Search 
+            value={searchTerm}
+            onChange={this.onSearchChange}
+            onSubmit={this.onSearchSubmit}
+          >
+          搜索
+          </Search>
+        </div> 
+
+        { result
+          ? <Table
+            list={result.hits}
+            // pattern={searchTerm}
+            onDismiss={this.onDismiss}
+          />
+          : null
+        }
+      </div>
+    );       
+  } 
+}
+
+const Search = ({ value, onChange, onSubmit, children }) => 
+  <form onSubmit={onSubmit}>
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+    />
+    <button type="submit">
+      {children}
+    </button>
+  </form>
+
+const Table = ({ list, onDismiss }) =>
+  <div className="table">
+    { list.map(item =>
+      <div key={item.objectID} className="table-row">
+        <span>
+          <a href={item.url}>{item.title}</a>
+        </span>
+        <span>author: {item.author}</span>
+        {/* <span>{item.num_comments}</span>
+        <span>{item.points}</span> */}
+        <span>
+          <button
+            onClick={() => onDismiss(item.objectID)}
+            className="button-inline"
+          >
+            Dismiss
+          </button>
+        </span>
+      </div>
+      )
+    }
+  </div>
+
+
+ReactDOM.render(
+  <MyApp />,
+  document.getElementById('root')
+);
+
+export default MyApp;
